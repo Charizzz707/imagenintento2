@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Información del Dispositivo de la Imagen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .lista-imagenes {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .item-imagen {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            width: 300px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .item-imagen:hover {
+            transform: scale(1.05);
+        }
+
+        .item-imagen img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .info-imagen {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .lista-exif {
+            margin-top: 15px;
+            padding-left: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .lista-exif li {
+            margin-bottom: 5px;
+        }
+
+        .exif-titulo {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Información del Dispositivo de la Imagen</h1>
+
+    <input type="file" id="entradaArchivo" webkitdirectory directory multiple accept="image/*">
+    <div class="lista-imagenes" id="listaImagenes"></div>
+
+    <script>
+        document.getElementById('entradaArchivo').addEventListener('change', e => {
+            const archivos = e.target.files;
+            const listaImagenes = document.getElementById('listaImagenes');
+            listaImagenes.innerHTML = ''; // Limpiar el contenedor de imágenes
+
+            Array.from(archivos).forEach(archivo => {
+                if (archivo.type.startsWith("image/")) {
+                    const lector = new FileReader();
+
+                    lector.onload = (e) => {
+                        const imagen = new Image();
+                        imagen.src = e.target.result;
+                        imagen.onload = () => {
+                            const item = document.createElement('div');
+                            item.classList.add('item-imagen');
+
+                            const divInfo = document.createElement('div');
+                            divInfo.classList.add('info-imagen');
+
+                            item.appendChild(imagen);
+                            listaImagenes.appendChild(item);
+
+                            const { width, height } = imagen;
+                            const tamanio = (archivo.size / 1024).toFixed(2);
+                            const tamanioTexto = tamanio > 1024 ? (tamanio / 1024).toFixed(2) + ' MB' : tamanio + ' KB';
+
+                            EXIF.getData(imagen, () => {
+                                const exif = EXIF.getAllTags(imagen);
+                                const iso = exif.ISO || "Desconocido";
+                                const numeroApertura = exif.FNumber || "Desconocido";
+                                const velocidadObturacion = exif.ShutterSpeedValue || "Desconocido";
+                                const longitudFocal = exif.FocalLength || "Desconocido";
+                                const marca = exif.Make || "Desconocido";
+                                const modelo = exif.Model || "Desconocido";
+                                const fechaHora = exif.DateTime || "Desconocido";
+
+                                const infoCamara = `Cámara: ${marca} ${modelo}<br>Fecha: ${fechaHora}`;
+                                const infoExif = `
+                                    ISO: ${iso}<br>
+                                    Apertura: f/${numeroApertura}<br>
+                                    Velocidad de obturación: 1/${Math.round(1 / velocidadObturacion)} s<br>
+                                    Longitud focal: ${longitudFocal} mm
+                                `;
+
+                                divInfo.innerHTML = `
+                                    Resolución: ${width} x ${height}px<br>
+                                    Tamaño: ${tamanioTexto}<br>
+                                    ${infoCamara}<br>
+                                    ${infoExif}
+                                `;
+                                item.appendChild(divInfo);
+
+                                const listaExif = document.createElement('ul');
+                                listaExif.classList.add('lista-exif');
+                                listaExif.innerHTML = `
+                                    <li><span class="exif-titulo">ISO:</span> ${iso}</li>
+                                    <li><span class="exif-titulo">Apertura:</span> f/${numeroApertura}</li>
+                                    <li><span class="exif-titulo">Velocidad de obturación:</span> 1/${Math.round(1 / velocidadObturacion)} s</li>
+                                    <li><span class="exif-titulo">Longitud focal:</span> ${longitudFocal} mm</li>
+                                `;
+                                item.appendChild(listaExif);
+                            });
+                        };
+                    };
+
+                    lector.readAsDataURL(archivo);
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
